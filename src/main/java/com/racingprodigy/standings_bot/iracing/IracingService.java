@@ -10,6 +10,7 @@ import com.racingprodigy.standings_bot.util.OffsetDateTimeAdapter;
 import jakarta.annotation.PostConstruct;
 import okhttp3.*;
 import okhttp3.java.net.cookiejar.JavaNetCookieJar;
+import org.apache.commons.lang3.function.FailableSupplier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -53,28 +54,41 @@ public class IracingService {
         }
     }
 
+    private <T> T makeiRacingCallWithSingleRetryForLogin(FailableSupplier<T, Exception> supplier) {
+        try {
+            return supplier.get();
+        } catch (Exception e) {
+            try {
+                login();
+                return supplier.get();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
     public IracingSeasonDetailsResponse getiRacingSeries(String seasonId) throws Exception {
-        List<IracingSeasonDetailsResponse> responses = getiRacingResponseFromPathAndGetLinkResponse(
+        List<IracingSeasonDetailsResponse> responses = makeiRacingCallWithSingleRetryForLogin(() -> getiRacingResponseFromPathAndGetLinkResponse(
                 "series/seasons",
                 new TypeToken<List<IracingSeasonDetailsResponse>>() {
-                }.getType());
+                }.getType()));
         return responses.stream().filter((s) -> s.seasonId() == Integer.parseInt(seasonId)).findFirst().get();
 
     }
 
     public IracingDriverResponse getiRacingDriver(String iRacingID) throws Exception {
-        List<IracingDriverResponse> responses = getiRacingResponseFromPathAndGetLinkResponse(
+        List<IracingDriverResponse> responses = makeiRacingCallWithSingleRetryForLogin(() -> getiRacingResponseFromPathAndGetLinkResponse(
                 String.format("lookup/drivers?search_term=%s", iRacingID),
                 new TypeToken<List<IracingDriverResponse>>() {
-                }.getType());
+                }.getType()));
         return responses.get(0);
     }
 
     public IracingSeasonStandingsResponse getSeriesResults(String seasonId, String carClassId) throws Exception {
-        return getiRacingResponseFromPathAndGetLinkResponse(
+        return makeiRacingCallWithSingleRetryForLogin(() -> getiRacingResponseFromPathAndGetLinkResponse(
                 String.format("stats/season_driver_standings?season_id=%s&car_class_id=%s", seasonId, carClassId),
                 new TypeToken<IracingSeasonStandingsResponse>() {
-                }.getType());
+                }.getType()));
     }
 
     private <T> T getiRacingResponseFromPathAndGetLinkResponse(String path, Type type) throws Exception {
@@ -121,7 +135,7 @@ public class IracingService {
         }
     }
 
-    public static String getSHA256AndBase64(String input) {
+    private String getSHA256AndBase64(String input) {
         try {
             // Get the SHA-256 MessageDigest
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

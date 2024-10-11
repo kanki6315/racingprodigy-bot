@@ -45,7 +45,7 @@ public class RefreshIracingSeasonResultsJob {
     @Value("${racingprodigy.channel.image_channel}")
     private String imageChannelId;
 
-    @Scheduled(fixedRate = 30 * 60 * 1000, initialDelay = 5 * 60 * 1000)
+    @Scheduled(cron = "0 45 * * * *")
     public void run() {
         try {
             var rpDrivers = rpIracingDriverRepository.findAll();
@@ -81,7 +81,7 @@ public class RefreshIracingSeasonResultsJob {
 
                 OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
                 var midnightTuesday = now.with(TemporalAdjusters.nextOrSame(DayOfWeek.TUESDAY)).withHour(0).withMinute(0).withSecond(0).withNano(0);
-                var midnightPlus = midnightTuesday.plusMinutes(30);
+                var midnightPlus = midnightTuesday.plusMinutes(50);
 
                 if (now.isAfter(midnightTuesday) && now.isBefore(midnightPlus) && message.get().getTimeCreated().isBefore(midnightTuesday)) {
                     LOGGER.info("Creating new posts in channel");
