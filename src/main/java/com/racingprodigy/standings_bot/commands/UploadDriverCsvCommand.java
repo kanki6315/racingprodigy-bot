@@ -2,6 +2,7 @@ package com.racingprodigy.standings_bot.commands;
 
 import com.racingprodigy.standings_bot.data.RPIracingDriver;
 import com.racingprodigy.standings_bot.data.RPIracingDriverRepository;
+import com.racingprodigy.standings_bot.service.PullService;
 import com.racingprodigy.standings_bot.util.CsvHelper;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 import static com.racingprodigy.standings_bot.util.MessageUtil.sendStackTraceToChannel;
 
@@ -30,6 +32,9 @@ public class UploadDriverCsvCommand extends ListenerAdapter {
 
     @Autowired
     private RPIracingDriverRepository rpIracingDriverRepository;
+
+    @Autowired
+    private PullService pullService;
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -52,11 +57,14 @@ public class UploadDriverCsvCommand extends ListenerAdapter {
                 LOGGER.info("Deleting previous driver entries");
                 rpIracingDriverRepository.deleteAll();
 
+                var rpList = new ArrayList<RPIracingDriver>();
                 for (var id : ids) {
                     var entry = new RPIracingDriver(id);
-                    rpIracingDriverRepository.save(entry);
+                    rpList.add(rpIracingDriverRepository.save(entry));
                 }
-                LOGGER.info("Finished saving new driver entries");
+                LOGGER.info("Finished saving new driver entries. Requesting iRacing results");
+                pullService.getIracingSeasonStandings(rpList, "5029", "74");
+                LOGGER.info("Finished saving positions");
             } catch (Exception e) {
                 LOGGER.error("Failed to read CSV", e);
                 var channel = event.getJDA().getChannelById(TextChannel.class, errorChannelId);

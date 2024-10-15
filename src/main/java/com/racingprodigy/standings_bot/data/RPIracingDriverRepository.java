@@ -5,4 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RPIracingDriverRepository extends JpaRepository<RPIracingDriver, String> {
+    Integer countRPIracingDriverByPositionIsNotNull();
 }

@@ -36,5 +36,9 @@ public class RPIracingDriver {
     public Optional<Integer> getPosition() {
         return Optional.ofNullable(position);
     }
+
+    public void setPosition(@Nullable Integer position) {
+        this.position = position;
+    }
 }
 

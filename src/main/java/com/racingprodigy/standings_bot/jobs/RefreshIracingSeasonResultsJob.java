@@ -1,8 +1,8 @@
 package com.racingprodigy.standings_bot.jobs;
 
-import com.racingprodigy.standings_bot.data.RPIracingDriver;
 import com.racingprodigy.standings_bot.data.RPIracingDriverRepository;
 import com.racingprodigy.standings_bot.iracing.IracingService;
+import com.racingprodigy.standings_bot.service.PullService;
 import com.racingprodigy.standings_bot.template.TableService;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -38,6 +38,8 @@ public class RefreshIracingSeasonResultsJob {
     private TableService tableService;
     @Autowired
     private RPIracingDriverRepository rpIracingDriverRepository;
+    @Autowired
+    private PullService pullService;
 
     @Value("${racingprodigy.channel.error}")
     private String errorChannelId;
@@ -49,18 +51,14 @@ public class RefreshIracingSeasonResultsJob {
     public void run() {
         try {
             var rpDrivers = rpIracingDriverRepository.findAll();
-            var ids = rpDrivers.stream().map(RPIracingDriver::getId).toList();
 
-            if (ids.isEmpty()) {
+            if (rpDrivers.isEmpty()) {
                 LOGGER.info("No IDs found, skipping iRacing pull");
                 return;
             }
 
             LOGGER.info("Updating iRacing results");
-
-            var seasonStandings = iracingService.getSeriesResults(seasonID, carClassID);
-            var seasonChunk = iracingService.getChunkSeriesResult(seasonStandings.chunkInfo().baseDownloadUrl() + seasonStandings.chunkInfo().chunkFileNames().get(0));
-            var filteredChunk = seasonChunk.stream().filter(d -> ids.contains(d.custId())).toList();
+            var filteredStandings = pullService.getIracingSeasonStandings(rpDrivers, seasonID, carClassID);
 
             var seasonInfo = iracingService.getiRacingSeries(seasonID);
             var raceWeek = seasonInfo.schedules().stream().filter((w) -> w.raceWeekNum() == seasonInfo.raceWeek()).findFirst().get();
@@ -69,7 +67,7 @@ public class RefreshIracingSeasonResultsJob {
 
             LOGGER.info("Generating image");
 
-            var table = tableService.getImageTable(filteredChunk, weekNumber, trackName);
+            var table = tableService.getImageTable(filteredStandings, weekNumber, trackName);
 
             LOGGER.info("Checking for previous message");
 
