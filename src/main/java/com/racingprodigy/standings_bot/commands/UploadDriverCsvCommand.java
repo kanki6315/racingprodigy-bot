@@ -38,7 +38,7 @@ public class UploadDriverCsvCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        if (event.getName().equals("uploadlist")) {
+        if (event.getName().equals("uploadmx5list")) {
             event.deferReply(true).queue();
             var attachment = event.getOption("csvfile").getAsAttachment();
 
@@ -54,22 +54,22 @@ public class UploadDriverCsvCommand extends ListenerAdapter {
                 }
 
                 var ids = CsvHelper.readUniqueIracingCustomerIDs(new InputStreamReader(response.body().byteStream()));
-                LOGGER.info("Deleting previous driver entries");
-                rpIracingDriverRepository.deleteAll();
+                LOGGER.info("Deleting previous MX-5 driver entries");
+                rpIracingDriverRepository.deleteAllBySeriesTypeEquals(RPIracingDriver.Series.GLOBAL_MAZDA);
 
                 var rpList = new ArrayList<RPIracingDriver>();
                 for (var id : ids) {
-                    var entry = new RPIracingDriver(id);
+                    var entry = new RPIracingDriver(id, RPIracingDriver.Series.GLOBAL_MAZDA);
                     rpList.add(rpIracingDriverRepository.save(entry));
                 }
-                LOGGER.info("Finished saving new driver entries. Requesting iRacing results");
-                pullService.getIracingSeasonStandings(rpList, "5029", "74");
-                LOGGER.info("Finished saving positions");
+                LOGGER.info("Finished saving new MX-5 driver entries. Requesting iRacing results");
+                pullService.getIracingSeasonStandings(RPIracingDriver.Series.GLOBAL_MAZDA);
+                LOGGER.info("Finished saving MX-5 positions");
             } catch (Exception e) {
-                LOGGER.error("Failed to read CSV", e);
+                LOGGER.error("Failed to read MX-5 CSV", e);
                 var channel = event.getJDA().getChannelById(TextChannel.class, errorChannelId);
-                sendStackTraceToChannel("Failed to read CSV", channel, e);
-                event.getHook().sendMessage("Failed to read CSV").setEphemeral(true).queue();
+                sendStackTraceToChannel("Failed to read MX-5 CSV", channel, e);
+                event.getHook().sendMessage("Failed to read MX-5 CSV").setEphemeral(true).queue();
                 return;
             }
 

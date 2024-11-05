@@ -1,5 +1,6 @@
 package com.racingprodigy.standings_bot.commands;
 
+import com.racingprodigy.standings_bot.data.RPIracingDriver;
 import com.racingprodigy.standings_bot.data.RPIracingDriverRepository;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -34,12 +35,20 @@ public class CheckStandingsCommand extends ListenerAdapter {
                 var iRacingID = event.getOption("iracingid").getAsInt();
                 var championship = event.getOption("championship").getAsString();
 
-                // if (championship.equals("MX5") {
-                var count = rpIracingDriverRepository.countRPIracingDriverByPositionIsNotNull();
+                RPIracingDriver.Series series;
+                if (championship.equals("MX-5")) {
+                    series = RPIracingDriver.Series.GLOBAL_MAZDA;
+                } else if (championship.equals("GR86")) {
+                    series = RPIracingDriver.Series.GR86;
+                } else {
+                    throw new RuntimeException("Unable to match championship to input" + championship);
+                }
+
+                var count = rpIracingDriverRepository.countRPIracingDriverBySeriesTypeEqualsAndPositionIsNotNull(series);
                 LOGGER.info("Counted {} drivers with position", count);
                 DecimalFormat df = new DecimalFormat("##.##%");
 
-                rpIracingDriverRepository.findById(Integer.toString(iRacingID))
+                rpIracingDriverRepository.findByIdAndSeriesTypeEquals(iRacingID, series)
                         .ifPresentOrElse((driver) -> {
                             if (driver.getPosition().isPresent()) {
                                 var percentageChamp = (double) driver.getPosition().get() / count;
@@ -49,6 +58,7 @@ public class CheckStandingsCommand extends ListenerAdapter {
                                 event.getHook().sendMessage("Driver is not currently placed in championship").setEphemeral(true).queue();
                             }
                         }, () -> event.getHook().sendMessage("Racing Prodigy Driver was not found with the iRacing ID: " + iRacingID).setEphemeral(true).queue());
+
 
             } catch (Exception e) {
                 LOGGER.error("Failed to determine championship position", e);

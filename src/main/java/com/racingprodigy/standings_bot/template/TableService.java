@@ -28,7 +28,7 @@ public class TableService {
         }
     }
 
-    public FileUpload getImageTable(List<IracingSeasonStandingChunkResponse> seasonStandings, int weekNumber, String trackName) throws Exception {
+    public FileUpload getImageTable(String fileName, List<IracingSeasonStandingChunkResponse> seasonStandings, int weekNumber, String trackName) throws Exception {
 
         Object[][] data = new Object[36][4];
         DecimalFormat format = new DecimalFormat("0.#");
@@ -45,6 +45,7 @@ public class TableService {
         try {
             // Create a BufferedImage
             BufferedImage image = generateTableImage(
+                    fileName,
                     new boolean[]{true, false, false, false},
                     data,
                     new int[]{216, 155, 200, 160},
@@ -68,7 +69,7 @@ public class TableService {
         return inputStream;
     }
 
-    public BufferedImage generateTableImage(boolean[] shouldCenterColumn, Object[][] data, int[] perColumnPadding, int weekNumber, String trackName) throws Exception {
+    public BufferedImage generateTableImage(String bgFileName, boolean[] shouldCenterColumn, Object[][] data, int[] perColumnPadding, int weekNumber, String trackName) throws Exception {
         int cellPadding = 10;
         int cellHeight = 130;
 
@@ -77,7 +78,7 @@ public class TableService {
         int numColumns = shouldCenterColumn.length;
 
         // Load background image from classpath
-        BufferedImage bgImage = ImageIO.read(TableService.class.getResourceAsStream("/imageBackground.png"));
+        BufferedImage bgImage = ImageIO.read(TableService.class.getResourceAsStream(String.format("/%s.png", bgFileName)));
 
         // Create a temporary Graphics2D object for font metrics calculations
         BufferedImage tmpImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
@@ -94,6 +95,20 @@ public class TableService {
                 }
             }
         }
+
+        int maxStringLength = 0;
+        for (int row = 0; row < data.length; row++) {
+            int length = data[row][2].toString().length();
+            if (length > maxStringLength) {
+                maxStringLength = length;
+            }
+        }
+        if (maxStringLength < 5) {
+            columnWidths[2] += 50; // increase padding
+        } else if (maxStringLength > 5) {
+            columnWidths[2] -= 45; // reduce padding
+        }
+
         tmpG2d.dispose();
 
         // Create the final BufferedImage

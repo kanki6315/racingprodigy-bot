@@ -30,14 +30,14 @@ public class JDAConfig {
                 .enableIntents(GatewayIntent.MESSAGE_CONTENT)
                 .addEventListeners(uploadDriverCsvCommand, checkStandingsCommand).build();
 
-        /*api.retrieveCommands().queue(commands -> {
-            for (var command : commands) {
-                api.deleteCommandById(command.getId()).queue();
-            }
-        });*/
+//        api.retrieveCommands().queue(commands -> {
+//            for (var command : commands) {
+//                api.deleteCommandById(command.getId()).queue();
+//            }
+//        });
 
         api.upsertCommand(
-                Commands.slash("uploadlist", "Upload list")
+                Commands.slash("uploadmx5list", "Upload list")
                         .addOption(OptionType.ATTACHMENT, "csvfile", "csvfile")
                         .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
         ).queue();
@@ -48,7 +48,8 @@ public class JDAConfig {
                                         "championship",
                                         "Which championship are you checking",
                                         true)
-                                        .addChoice("Fanatec Global Mazda MX-5 Cup", "MX-5"),
+                                        .addChoice("Fanatec Global Mazda MX-5 Cup", "MX-5")
+                                        .addChoice("PRL Toyota GR86 Cup", "GR86"),
                                 new OptionData(OptionType.INTEGER, "iracingid", "Please enter your iRacing ID", true))
         ).queue();
 
